@@ -10,20 +10,20 @@
 
 
     <LinearLayout
-
+        android:id="@+id/lin_on"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
         <TextView
-            android:text="发送周期:"
+            android:text="采集周期:"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
         <EditText
-            android:id="@+id/ed_time"
-            android:layout_width="50dp"
+            android:id="@+id/ed_delaytime"
+            android:layout_width="100dp"
             android:layout_height="wrap_content" />
         <TextView
-            android:paddingRight="100dp"
+            android:paddingRight="30dp"
             android:text="S"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
@@ -38,44 +38,84 @@
             android:layout_height="wrap_content"/>
 
     </LinearLayout>
+    <LinearLayout
+        android:layout_marginBottom="20dp"
+        android:id="@+id/lin_be"
+        android:layout_below="@+id/lin_on"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+        <TextView
+            android:text="采集次数:"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+        <EditText
+            android:id="@+id/ed_times"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content" />
+        <TextView
+            android:paddingRight="30dp"
+            android:text="次"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
 
 
 
     <EditText
-        android:paddingTop="100dp"
+        android:layout_margin="20dp"
         android:id="@+id/edit_roomName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="37dp"
         android:ems="10"
         android:hint="房间号"
-        android:layout_alignParentTop="true"
+
+        android:layout_below="@+id/lin_be"
         android:layout_centerHorizontal="true">
 
         <requestFocus />
     </EditText>
 
-    <Button
-        android:id="@+id/bt_start"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/edit_roomName"
-        android:layout_below="@+id/edit_roomName"
-        android:layout_marginTop="23dp"
-        android:onClick="startTraining"
-        android:text="开始"
-        android:width="100dp" />
 
-    <Button
-        android:id="@+id/bt_back"
+
+
+
+    <LinearLayout
+
+        android:layout_margin="20dp"
+        android:id="@+id/lin_btns"
+        android:layout_centerHorizontal="true"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_below="@id/edit_roomName"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBaseline="@+id/bt_start"
-        android:layout_alignBottom="@+id/bt_start"
-        android:layout_alignRight="@+id/edit_roomName"
-        android:onClick="returnBack"
-        android:text="后退"
-        android:width="100dp"
-        android:enabled="true" />
+        android:layout_height="wrap_content">
+        <Button
+
+            android:layout_gravity="center"
+            android:id="@+id/bt_start"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignLeft="@+id/edit_roomName"
+            android:layout_below="@+id/edit_roomName"
+            android:onClick="startTraining"
+            android:text="开始"
+            android:width="100dp" />
+
+        <Button
+            android:layout_gravity="center"
+            android:id="@+id/bt_back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBaseline="@+id/bt_start"
+            android:layout_alignBottom="@+id/bt_start"
+            android:layout_alignRight="@+id/edit_roomName"
+            android:onClick="returnBack"
+            android:text="后退"
+            android:width="100dp"
+            android:enabled="true" />
+
+    </LinearLayout>
+
+
 
 </RelativeLayout>

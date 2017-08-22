@@ -7,6 +7,8 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.media.AudioManager;
+import android.media.SoundPool;
 import android.net.wifi.*;
 import android.os.*;
 import android.annotation.SuppressLint;
@@ -23,7 +25,7 @@ import android.widget.*;
 import menthallab.wafflelib.*;
 
 import static menthallab.waffle.R.id.bt_start;
-import static menthallab.waffle.R.id.ed_time;
+import static menthallab.waffle.R.id.ed_delaytime;
 
 
 //是周期才数据还是 利用上一次的数据?
@@ -31,7 +33,8 @@ import static menthallab.waffle.R.id.ed_time;
 @SuppressLint("DefaultLocale")
 public class GatherActivity extends Activity {
 
-	private EditText ed_time;
+	private EditText ed_times;
+	private EditText ed_delaytime;
 	private TextView tv_bluetoothNum;
 	private Button startButton;
 	private Button backButton;
@@ -46,6 +49,13 @@ public class GatherActivity extends Activity {
 	private Set<String> tmpBlueToothSet;
 	private SensorEventListener mSensorListener;
 
+	protected static final int HANDLER_FRESH_TIMES = 1;
+	protected static final int HANDLER_FRESH_TIMES_OVER = 2;
+
+	//声明一个soundpool对象
+	private SoundPool soundPool;
+
+
 	ArrayList<String> bluetooth_dev_list;
 	ArrayList<String> wifi_dev_list;
 	ArrayList<String> geomagnetic_dev_list;
@@ -56,14 +66,16 @@ public class GatherActivity extends Activity {
 //	经过多少秒采集一次数据  1000 = 1秒
 	private  int delaytime;
 //	每个点的采集次数
-	private final int times = 10;
+	private  int times;
+
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_gather);
 
-		ed_time = (EditText)findViewById(R.id.ed_time);
+		ed_times = (EditText)findViewById(R.id.ed_times);
+		ed_delaytime = (EditText)findViewById(R.id.ed_delaytime);
 		startButton = (Button)findViewById(bt_start);
 		backButton = (Button)findViewById(R.id.bt_back);
 		editText = (EditText)findViewById(R.id.edit_roomName);
@@ -90,6 +102,11 @@ public class GatherActivity extends Activity {
 		isWorking = false;
 		IDGenerator.reset();
 		editText.setHint("location " + IDGenerator.getNextId());
+
+        //实例化声音对象
+		soundPool= new SoundPool(1, AudioManager.STREAM_SYSTEM,5);
+		soundPool.load(this,R.raw.sound,1);
+
 	}
 
 	private void dataInit() {
@@ -112,6 +129,27 @@ public class GatherActivity extends Activity {
 		geomagnetic_dev_list.add("Geomagnetic2");
 		geomagnetic_dev_list.add("Geomagnetic3");
 	}
+
+	Handler handler = new Handler(){
+		@Override
+		public void handleMessage(Message msg) {
+			super.handleMessage(msg);
+			switch (msg.what) {
+				case HANDLER_FRESH_TIMES:
+					ed_times.setText(times-t + "");
+					break;
+				case HANDLER_FRESH_TIMES_OVER:
+					Toast.makeText(GatherActivity.this,"the data at this point is over! you can go to next point!",Toast.LENGTH_LONG).show();
+					startButton.performClick();
+
+					//采集完成，播放声音
+
+					soundPool.play(1,1, 1, 0, 0, 1);
+					break;
+
+			}
+		}
+	};
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -221,12 +259,14 @@ public class GatherActivity extends Activity {
     public void startTraining(View view){
     	if (isWorking)
     	{
-			ed_time.setEnabled(true);
+			ed_times.setEnabled(true);
+			ed_delaytime.setEnabled(true);
     		unregisterReceiver(rssiReceiver);
     		unregisterReceiver(mReceiver);		
     		editText.setEnabled(true);
     		backButton.setEnabled(true);
     		startButton.setText("begin");
+			ed_times.setText(times + "");
     		isWorking = false;
     		editText.setHint("locate " + IDGenerator.getNextId());
     		try
@@ -249,13 +289,15 @@ public class GatherActivity extends Activity {
 			//先都初始化为0 然后进行时间周期内扫描
 
 			try {
-				delaytime = Integer.parseInt(ed_time.getText().toString());
+				delaytime = Integer.parseInt(ed_delaytime.getText().toString());
+				times = Integer.parseInt(ed_times.getText().toString());
 			}catch (Exception e){
 				Toast.makeText(this,"请输入一个有效的数字",Toast.LENGTH_LONG).show();
 				return;
 			}
 
-			ed_time.setEnabled(false);
+			ed_delaytime.setEnabled(false);
+			ed_times.setEnabled(false);
 
 			startButton.setText("stop");
     		editText.setEnabled(false);
@@ -279,40 +321,20 @@ public class GatherActivity extends Activity {
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
+						handler.sendEmptyMessage(HANDLER_FRESH_TIMES);
 						makeData();
 						reInitData();
 						reInitBlueTooth();
 
 					}
-					runOnUiThread(new Runnable() {
-						@Override
-						public void run() {
-							Toast.makeText(GatherActivity.this,"the data at this point is over! you can go to next point!",Toast.LENGTH_LONG).show();
-							startButton.performClick();
-						}
-					});
+					handler.sendEmptyMessage(HANDLER_FRESH_TIMES_OVER);
 
 				}
 			}).start();
     	}
     }
 
-    //将dataMap同步为dataset
-    private void makeData(){
-       	Log.w("begain", "。。。。。。。。。。。。。。。。。。");
-		Instance instance = new Instance();
-		for(Map.Entry<String ,String> entry:dataMap.entrySet()) {
-			Log.w(entry.getKey(), entry.getValue());
-			instance.add(entry.getKey(), Double.valueOf(entry.getValue()));
-		}
 
-		String label = editText.getText().toString();
-		if (label.equals(""))
-			label = editText.getHint().toString();
-		dataset.addInstance(instance,label,true);
-
-		Log.w("end", "。。。。。。。。。。。。。。。。。。");
-	}
 
     /** Called when the user clicks the Back button */
     public void returnBack(View view) {
@@ -345,23 +367,40 @@ public class GatherActivity extends Activity {
 		}
 	}
 
-		private void reInitData() {
-			//先都初始化为0 然后进行时间周期内扫描
-			for(String str:bluetooth_dev_list){
-				dataMap.put(str,0+"");
-			}
-			for(String str:wifi_dev_list){
-				dataMap.put(str,0+"");
-			}
-
-
+	private void reInitData() {
+		//先都初始化为0 然后进行时间周期内扫描
+		for(String str:bluetooth_dev_list){
+			dataMap.put(str,0+"");
+		}
+		for(String str:wifi_dev_list){
+			dataMap.put(str,0+"");
 		}
 
-		private void reInitBlueTooth()
-		{
-			tmpBlueToothSet.clear();
-			mBluetoothAdapter.startDiscovery();
+
+	}
+
+	private void reInitBlueTooth()
+	{
+		tmpBlueToothSet.clear();
+		mBluetoothAdapter.startDiscovery();
+	}
+
+	//将dataMap同步为dataset
+	private void makeData(){
+		Log.w("begain", "。。。。。。。。。。。。。。。。。。");
+		Instance instance = new Instance();
+		for(Map.Entry<String ,String> entry:dataMap.entrySet()) {
+			Log.w(entry.getKey(), entry.getValue());
+			instance.add(entry.getKey(), Double.valueOf(entry.getValue()));
 		}
+
+		String label = editText.getText().toString();
+		if (label.equals(""))
+			label = editText.getHint().toString();
+		dataset.addInstance(instance,label,true);
+
+		Log.w("end", "。。。。。。。。。。。。。。。。。。");
+	}
 
 }
 
